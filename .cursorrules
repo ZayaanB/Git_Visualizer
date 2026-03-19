@@ -1,0 +1,38 @@
+# Git Visualizer - Unity Project Rules
+
+## Tech Stack
+- Unity 6 (or latest)
+- C#
+- .NET
+
+## Architecture & Code Quality
+
+### Component-Based Architecture
+- All C# scripts must follow Unity's component-based architecture
+- Use MonoBehavior for scripts that interact with the Unity lifecycle
+- Prefer composition over inheritance; attach behaviors as components
+- Keep scripts focused on a single responsibility
+
+### Serialization & Inspector
+- **Prefer `[SerializeField]` over `public`** for variables exposed in the Inspector
+- Use `private` with `[SerializeField]` for configurable fields that should not be accessed from other scripts
+- Reserve `public` only for properties/methods that are part of the script's API
+
+### C# Naming Conventions
+- **Classes, methods, properties**: PascalCase
+- **Private fields**: _camelCase (leading underscore) or camelCase
+- **Parameters, local variables**: camelCase
+- **Constants**: PascalCase or UPPER_SNAKE_CASE
+- **Interfaces**: Prefix with `I` (e.g., `IRepositoryService`)
+
+### Network & API Calls
+- **Use `UnityWebRequest`** for all HTTP/network calls (never `WWW` or `HttpClient` in main thread)
+- Use coroutines or async/await with `UnityWebRequest` for non-blocking requests
+- Handle errors and timeouts appropriately
+- Do not perform blocking network operations on the main thread
+
+### General Best Practices
+- Use `#region` to organize large scripts
+- Add XML documentation for public APIs
+- Avoid `Find()` and `FindObjectOfType()` in Update; cache references in Start/Awake
+- Use `[RequireComponent]` when a script depends on another component
