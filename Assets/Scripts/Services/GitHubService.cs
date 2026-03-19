@@ -8,10 +8,7 @@ using GitVisualizer.Models;
 
 namespace GitVisualizer.Services
 {
-    /// <summary>
-    /// Securely fetches repository data from the GitHub REST API.
-    /// Uses UnityWebRequest for all network calls.
-    /// </summary>
+    /// <summary>Fetches repo data from GitHub REST API via UnityWebRequest.</summary>
     public class GitHubService
     {
         private const string ApiBaseUrl = "https://api.github.com";
@@ -20,9 +17,6 @@ namespace GitVisualizer.Services
         private const int CommitsPerBranch = 50;
         private const int MaxBranchesPerPage = 100;
 
-        /// <summary>
-        /// Result of fetching repository data (repo, branches, and commits per branch).
-        /// </summary>
         public class RepoDataResult
         {
             public Repository Repository;
@@ -35,13 +29,6 @@ namespace GitVisualizer.Services
             }
         }
 
-        /// <summary>
-        /// Asynchronously fetches repository data: repo info, all branches, and last 50 commits per branch.
-        /// </summary>
-        /// <param name="owner">Repository owner (e.g., "ZayaanB").</param>
-        /// <param name="repoName">Repository name (e.g., "Git_Visualizer").</param>
-        /// <param name="personalAccessToken">GitHub PAT for auth (use null for public repos if unauthenticated).</param>
-        /// <returns>RepoDataResult with Repository, Branches, and CommitsByBranch; null on failure.</returns>
         public async Task<RepoDataResult> FetchRepoData(string owner, string repoName, string personalAccessToken)
         {
             if (string.IsNullOrWhiteSpace(owner) || string.IsNullOrWhiteSpace(repoName))
@@ -54,17 +41,14 @@ namespace GitVisualizer.Services
 
             try
             {
-                // 1. Fetch repository
                 result.Repository = await FetchRepositoryAsync(owner, repoName, personalAccessToken);
                 if (result.Repository == null)
                     return null;
 
-                // 2. Fetch all branches
                 result.Branches = await FetchBranchesAsync(owner, repoName, personalAccessToken);
                 if (result.Branches == null)
                     return null;
 
-                // 3. Fetch last 50 commits for each branch
                 foreach (var branch in result.Branches)
                 {
                     var commits = await FetchCommitsAsync(owner, repoName, branch.name, personalAccessToken);

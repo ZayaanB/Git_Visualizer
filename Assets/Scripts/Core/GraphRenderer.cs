@@ -7,10 +7,7 @@ using GitVisualizer.Services;
 
 namespace GitVisualizer.Core
 {
-    /// <summary>
-    /// Renders commit data as a 3D graph: nodes for commits, LineRenderer for branch connections.
-    /// Layout: Z-axis = chronological, X-axis = branch separation.
-    /// </summary>
+    /// <summary>Renders commits as 3D nodes with branch lines. Z = time, X = branch.</summary>
     [RequireComponent(typeof(Transform))]
     public class GraphRenderer : MonoBehaviour
     {
@@ -47,11 +44,6 @@ namespace GitVisualizer.Core
         private Transform _nodesContainer;
         private Transform _linesContainer;
 
-        /// <summary>
-        /// Spawns the commit graph from repository data.
-        /// Clears any existing graph before spawning.
-        /// </summary>
-        /// <param name="data">Repository data from GitHubService.FetchRepoData.</param>
         public void SpawnGraph(GitHubService.RepoDataResult data)
         {
             if (data?.Branches == null)
@@ -64,11 +56,6 @@ namespace GitVisualizer.Core
             SpawnGraph(data.Branches.ToList(), commitsByBranch);
         }
 
-        /// <summary>
-        /// Spawns the commit graph from branches and commits.
-        /// </summary>
-        /// <param name="branches">List of branches.</param>
-        /// <param name="commitsByBranch">Commits per branch (branch name -> commits).</param>
         public void SpawnGraph(List<Branch> branches, IReadOnlyDictionary<string, Commit[]> commitsByBranch)
         {
             if (branches == null || branches.Count == 0)
@@ -231,7 +218,7 @@ namespace GitVisualizer.Core
             }
         }
 
-        private Color GetBranchColor(string branchName, int index, int totalBranches)
+        private Color GetBranchColor(string branchName, int index, int total)
         {
             var hash = branchName.GetHashCode();
             var hue = (Math.Abs(hash) % 360) / 360f;

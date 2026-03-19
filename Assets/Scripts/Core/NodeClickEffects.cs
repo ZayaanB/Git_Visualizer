@@ -2,10 +2,7 @@ using UnityEngine;
 
 namespace GitVisualizer.Core
 {
-    /// <summary>
-    /// Attach to CommitNode. Triggers sparkle/pulse particles when the node is clicked.
-    /// Add this to nodes at runtime; ParticleSystem is created if not present.
-    /// </summary>
+    /// <summary>Triggers sparkle particles when a commit node is clicked.</summary>
     [RequireComponent(typeof(Collider))]
     public class NodeClickEffects : MonoBehaviour
     {
@@ -24,18 +21,12 @@ namespace GitVisualizer.Core
                 CreateDefaultParticleSystem();
         }
 
-        /// <summary>
-        /// Call when the node is successfully clicked.
-        /// </summary>
         public void PlayClickEffect()
         {
             if (_clickParticles == null)
                 CreateDefaultParticleSystem();
 
-            if (_clickParticles != null)
-            {
-                _clickParticles.Emit(_burstCount);
-            }
+            _clickParticles?.Emit(_burstCount);
         }
 
         private void CreateDefaultParticleSystem()

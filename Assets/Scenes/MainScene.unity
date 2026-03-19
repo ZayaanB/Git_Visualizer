@@ -384,7 +384,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _spawnDuration: 0.4
   _elasticOvershoot: 1.2
-  _elasticPeriod: 0.3
   _staggerDelay: 0.02
 --- !u!1 &519420044
 GameObject:

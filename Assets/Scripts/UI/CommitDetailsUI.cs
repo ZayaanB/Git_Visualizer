@@ -7,9 +7,7 @@ using GitVisualizer.Models;
 
 namespace GitVisualizer.UI
 {
-    /// <summary>
-    /// World/Screen Space UI panel showing commit details. Tweens into view when a node is clicked.
-    /// </summary>
+    /// <summary>Commit details panel that tweens in when a node is clicked.</summary>
     public class CommitDetailsUI : MonoBehaviour
     {
         public static CommitDetailsUI Instance { get; private set; }
@@ -160,9 +158,6 @@ namespace GitVisualizer.UI
                 Instance = null;
         }
 
-        /// <summary>
-        /// Populates and shows the UI with the given commit data.
-        /// </summary>
         public void ShowCommit(Commit commit)
         {
             if (commit == null)
@@ -189,9 +184,6 @@ namespace GitVisualizer.UI
             Show();
         }
 
-        /// <summary>
-        /// Hides the panel with tween.
-        /// </summary>
         public void Hide()
         {
             if (_tweenCoroutine != null)
