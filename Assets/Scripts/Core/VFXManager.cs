@@ -3,20 +3,14 @@ using UnityEngine;
 
 namespace GitVisualizer.Core
 {
-    /// <summary>Handles spawn animations and VFX.</summary>
     public class VFXManager : MonoBehaviour
     {
         public static VFXManager Instance { get; private set; }
 
         [Header("Spawn Animation")]
-        [SerializeField]
-        private float _spawnDuration = 0.4f;
-
-        [SerializeField]
-        private float _elasticOvershoot = 1.2f;
-
-        [SerializeField]
-        private float _staggerDelay = 0.02f;
+        [SerializeField] private float _spawnDuration = 0.4f;
+        [SerializeField] private float _elasticOvershoot = 1.2f;
+        [SerializeField] private float _staggerDelay = 0.02f;
 
         private void Awake()
         {
@@ -36,21 +30,15 @@ namespace GitVisualizer.Core
 
         public void PlaySpawnAnimation(Transform node, Vector3 targetScale, float delay = 0f)
         {
-            if (node == null)
-                return;
-
+            if (node == null) return;
             StartCoroutine(SpawnAnimationCoroutine(node, targetScale, delay));
         }
 
         public void PlaySpawnAnimationStaggered(Transform[] nodes, Vector3 targetScale)
         {
-            if (nodes == null)
-                return;
-
+            if (nodes == null) return;
             for (int i = 0; i < nodes.Length; i++)
-            {
                 PlaySpawnAnimation(nodes[i], targetScale, i * _staggerDelay);
-            }
         }
 
         private IEnumerator SpawnAnimationCoroutine(Transform node, Vector3 targetScale, float delay)
@@ -65,23 +53,20 @@ namespace GitVisualizer.Core
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / _spawnDuration);
-
                 float scale = ElasticOut(t, _elasticOvershoot);
                 node.localScale = targetScale * scale;
-
                 yield return null;
             }
 
             node.localScale = targetScale;
         }
 
+        // Bounce overshoot: t + overshoot * sin(t*pi)
         private static float ElasticOut(float t, float overshoot)
         {
             if (t <= 0f) return 0f;
             if (t >= 1f) return 1f;
-
-            float bounce = Mathf.Sin(t * Mathf.PI);
-            return t + (overshoot - 0.5f) * bounce;
+            return t + (overshoot - 0.5f) * Mathf.Sin(t * Mathf.PI);
         }
     }
 }

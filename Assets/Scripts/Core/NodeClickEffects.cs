@@ -2,18 +2,12 @@ using UnityEngine;
 
 namespace GitVisualizer.Core
 {
-    /// <summary>Triggers sparkle particles when a commit node is clicked.</summary>
     [RequireComponent(typeof(Collider))]
     public class NodeClickEffects : MonoBehaviour
     {
-        [SerializeField]
-        private ParticleSystem _clickParticles;
-
-        [SerializeField]
-        private int _burstCount = 12;
-
-        [SerializeField]
-        private float _particleLifetime = 0.5f;
+        [SerializeField] private ParticleSystem _clickParticles;
+        [SerializeField] private int _burstCount = 12;
+        [SerializeField] private float _particleLifetime = 0.5f;
 
         private void Awake()
         {
@@ -25,7 +19,6 @@ namespace GitVisualizer.Core
         {
             if (_clickParticles == null)
                 CreateDefaultParticleSystem();
-
             _clickParticles?.Emit(_burstCount);
         }
 

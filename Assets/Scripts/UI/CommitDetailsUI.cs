@@ -7,39 +7,22 @@ using GitVisualizer.Models;
 
 namespace GitVisualizer.UI
 {
-    /// <summary>Commit details panel that tweens in when a node is clicked.</summary>
     public class CommitDetailsUI : MonoBehaviour
     {
         public static CommitDetailsUI Instance { get; private set; }
 
         [Header("References")]
-        [SerializeField]
-        private RectTransform _panel;
+        [SerializeField] private RectTransform _panel;
+        [SerializeField] private TMP_Text _commitMessageText;
+        [SerializeField] private TMP_Text _authorText;
+        [SerializeField] private TMP_Text _dateText;
 
-        [SerializeField]
-        private TMP_Text _commitMessageText;
-
-        [SerializeField]
-        private TMP_Text _authorText;
-
-        [SerializeField]
-        private TMP_Text _dateText;
-
-        [Header("Tween Settings")]
-        [SerializeField]
-        private float _tweenDuration = 0.25f;
-
-        [SerializeField]
-        private AnimationCurve _tweenCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
-
-        [SerializeField]
-        private Vector2 _hiddenAnchorMin = new Vector2(1.1f, 0.5f);
-
-        [SerializeField]
-        private Vector2 _visibleAnchorMin = new Vector2(0.75f, 0.5f);
-
-        [SerializeField]
-        private Vector2 _anchorMax = new Vector2(1f, 0.7f);
+        [Header("Tween")]
+        [SerializeField] private float _tweenDuration = 0.25f;
+        [SerializeField] private AnimationCurve _tweenCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+        [SerializeField] private Vector2 _hiddenAnchorMin = new Vector2(1.1f, 0.5f);
+        [SerializeField] private Vector2 _visibleAnchorMin = new Vector2(0.75f, 0.5f);
+        [SerializeField] private Vector2 _anchorMax = new Vector2(1f, 0.7f);
 
         private CanvasGroup _canvasGroup;
         private Coroutine _tweenCoroutine;
@@ -58,10 +41,7 @@ namespace GitVisualizer.UI
 
             if (_panel != null)
             {
-                _canvasGroup = _panel.GetComponent<CanvasGroup>();
-                if (_canvasGroup == null)
-                    _canvasGroup = _panel.gameObject.AddComponent<CanvasGroup>();
-
+                _canvasGroup = _panel.GetComponent<CanvasGroup>() ?? _panel.gameObject.AddComponent<CanvasGroup>();
                 _panel.anchorMin = _hiddenAnchorMin;
                 _panel.anchorMax = _anchorMax;
                 _panel.pivot = new Vector2(1f, 0.5f);
@@ -70,13 +50,17 @@ namespace GitVisualizer.UI
             }
         }
 
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+        }
+
         private void BuildUIIfNeeded()
         {
-            var canvasObj = GetComponent<Canvas>();
-            if (canvasObj == null)
+            if (GetComponent<Canvas>() == null)
             {
-                var canvas = gameObject.AddComponent<Canvas>();
-                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                gameObject.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
                 gameObject.AddComponent<CanvasScaler>();
                 gameObject.AddComponent<GraphicRaycaster>();
                 if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
@@ -94,15 +78,13 @@ namespace GitVisualizer.UI
             _panel.anchoredPosition = Vector2.zero;
             _panel.sizeDelta = Vector2.zero;
 
-            var image = _panel.gameObject.AddComponent<Image>();
-            image.color = new Color(0.1f, 0.1f, 0.15f, 0.95f);
+            _panel.gameObject.AddComponent<Image>().color = new Color(0.1f, 0.1f, 0.15f, 0.95f);
 
             var layout = _panel.gameObject.AddComponent<VerticalLayoutGroup>();
             layout.padding = new RectOffset(16, 16, 16, 16);
             layout.spacing = 8;
             layout.childAlignment = TextAnchor.UpperLeft;
-            layout.childControlWidth = true;
-            layout.childControlHeight = true;
+            layout.childControlWidth = layout.childControlHeight = true;
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
 
@@ -113,15 +95,12 @@ namespace GitVisualizer.UI
             var closeBtn = new GameObject("CloseButton").AddComponent<Button>();
             closeBtn.transform.SetParent(_panel, false);
             var closeRect = closeBtn.GetComponent<RectTransform>();
-            closeRect.anchorMin = new Vector2(1f, 1f);
-            closeRect.anchorMax = new Vector2(1f, 1f);
+            closeRect.anchorMin = closeRect.anchorMax = new Vector2(1f, 1f);
             closeRect.pivot = new Vector2(1f, 1f);
             closeRect.anchoredPosition = new Vector2(-8, -8);
             closeRect.sizeDelta = new Vector2(32, 32);
-            var closeLayout = closeBtn.gameObject.AddComponent<LayoutElement>();
-            closeLayout.ignoreLayout = true;
-            var closeImage = closeBtn.gameObject.AddComponent<Image>();
-            closeImage.color = new Color(0.8f, 0.2f, 0.2f, 0.9f);
+            closeBtn.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            closeBtn.gameObject.AddComponent<Image>().color = new Color(0.8f, 0.2f, 0.2f, 0.9f);
             var closeText = new GameObject("Text").AddComponent<TextMeshProUGUI>();
             closeText.transform.SetParent(closeBtn.transform, false);
             closeText.text = "×";
@@ -131,8 +110,7 @@ namespace GitVisualizer.UI
             var textRect = closeText.GetComponent<RectTransform>();
             textRect.anchorMin = Vector2.zero;
             textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = Vector2.zero;
-            textRect.offsetMax = Vector2.zero;
+            textRect.offsetMin = textRect.offsetMax = Vector2.zero;
             closeBtn.onClick.AddListener(Hide);
         }
 
@@ -152,54 +130,27 @@ namespace GitVisualizer.UI
             return text;
         }
 
-        private void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
-        }
-
         public void ShowCommit(Commit commit)
         {
-            if (commit == null)
-                return;
+            if (commit == null) return;
 
-            if (_commitMessageText != null)
-            {
-                var message = commit.commit?.message?.Trim() ?? "(No message)";
-                _commitMessageText.text = TruncateMessage(message, 200);
-            }
-
-            if (_authorText != null)
-            {
-                var author = commit.commit?.author?.name ?? commit.author?.login ?? "(Unknown)";
-                _authorText.text = author;
-            }
-
-            if (_dateText != null)
-            {
-                var dateStr = commit.commit?.committer?.date ?? commit.commit?.author?.date ?? "";
-                _dateText.text = FormatDate(dateStr);
-            }
+            _commitMessageText.text = Truncate(commit.commit?.message?.Trim() ?? "(No message)", 200);
+            _authorText.text = commit.commit?.author?.name ?? commit.author?.login ?? "(Unknown)";
+            _dateText.text = FormatDate(commit.commit?.committer?.date ?? commit.commit?.author?.date ?? "");
 
             Show();
         }
 
         public void Hide()
         {
-            if (_tweenCoroutine != null)
-                StopCoroutine(_tweenCoroutine);
-
+            if (_tweenCoroutine != null) StopCoroutine(_tweenCoroutine);
             _tweenCoroutine = StartCoroutine(TweenToHidden());
         }
 
         private void Show()
         {
-            if (_panel == null)
-                return;
-
-            if (_tweenCoroutine != null)
-                StopCoroutine(_tweenCoroutine);
-
+            if (_panel == null) return;
+            if (_tweenCoroutine != null) StopCoroutine(_tweenCoroutine);
             _panel.gameObject.SetActive(true);
             _tweenCoroutine = StartCoroutine(TweenToVisible());
         }
@@ -207,68 +158,42 @@ namespace GitVisualizer.UI
         private IEnumerator TweenToVisible()
         {
             var elapsed = 0f;
-
             while (elapsed < _tweenDuration)
             {
                 elapsed += Time.deltaTime;
                 var t = _tweenCurve.Evaluate(elapsed / _tweenDuration);
-
                 _panel.anchorMin = Vector2.Lerp(_hiddenAnchorMin, _visibleAnchorMin, t);
-                if (_canvasGroup != null)
-                    _canvasGroup.alpha = Mathf.Lerp(0f, 1f, t);
-
+                if (_canvasGroup != null) _canvasGroup.alpha = Mathf.Lerp(0f, 1f, t);
                 yield return null;
             }
-
             _panel.anchorMin = _visibleAnchorMin;
-            if (_canvasGroup != null)
-                _canvasGroup.alpha = 1f;
-
+            if (_canvasGroup != null) _canvasGroup.alpha = 1f;
             _tweenCoroutine = null;
         }
 
         private IEnumerator TweenToHidden()
         {
             var elapsed = 0f;
-
             while (elapsed < _tweenDuration)
             {
                 elapsed += Time.deltaTime;
                 var t = _tweenCurve.Evaluate(elapsed / _tweenDuration);
-
                 _panel.anchorMin = Vector2.Lerp(_visibleAnchorMin, _hiddenAnchorMin, t);
-                if (_canvasGroup != null)
-                    _canvasGroup.alpha = Mathf.Lerp(1f, 0f, t);
-
+                if (_canvasGroup != null) _canvasGroup.alpha = Mathf.Lerp(1f, 0f, t);
                 yield return null;
             }
-
             _panel.anchorMin = _hiddenAnchorMin;
-            if (_canvasGroup != null)
-                _canvasGroup.alpha = 0f;
+            if (_canvasGroup != null) _canvasGroup.alpha = 0f;
             _panel.gameObject.SetActive(false);
-
             _tweenCoroutine = null;
         }
 
-        private static string TruncateMessage(string message, int maxLength)
-        {
-            if (string.IsNullOrEmpty(message))
-                return "(No message)";
-            if (message.Length <= maxLength)
-                return message;
-            return message.Substring(0, maxLength) + "...";
-        }
+        private static string Truncate(string s, int max) => string.IsNullOrEmpty(s) ? "(No message)" : s.Length <= max ? s : s.Substring(0, max) + "...";
 
         private static string FormatDate(string dateStr)
         {
-            if (string.IsNullOrEmpty(dateStr))
-                return "(No date)";
-
-            if (DateTime.TryParse(dateStr, out var dt))
-                return dt.ToString("yyyy-MM-dd HH:mm");
-
-            return dateStr;
+            if (string.IsNullOrEmpty(dateStr)) return "(No date)";
+            return DateTime.TryParse(dateStr, out var dt) ? dt.ToString("yyyy-MM-dd HH:mm") : dateStr;
         }
     }
 }
