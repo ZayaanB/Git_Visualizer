@@ -11,6 +11,8 @@ namespace GitVisualizer.Core
     public class NodeInteractable : MonoBehaviour
     {
         private Commit _commit;
+        private string _branchName;
+        private int _indexInBranch;
 
         /// <summary>
         /// Sets the commit data for this node. Call after instantiation.
@@ -20,20 +22,31 @@ namespace GitVisualizer.Core
             _commit = commit;
         }
 
+        /// <summary>
+        /// Sets branch info for avatar path-finding.
+        /// </summary>
+        public void SetBranchInfo(string branchName, int indexInBranch)
+        {
+            _branchName = branchName ?? "";
+            _indexInBranch = indexInBranch;
+        }
+
         private void OnMouseUpAsButton()
         {
             if (_commit == null)
                 return;
 
-            var ui = CommitDetailsUI.Instance;
+            var effects = GetComponent<NodeClickEffects>();
+            if (effects != null)
+                effects.PlayClickEffect();
+
+            var ui = GitVisualizer.UI.CommitDetailsUI.Instance;
             if (ui != null)
-            {
                 ui.ShowCommit(_commit);
-            }
-            else
-            {
-                Debug.LogWarning("[NodeInteractable] No CommitDetailsUI found. Assign one in the scene.");
-            }
+
+            var avatar = FindObjectOfType<AvatarController>();
+            if (avatar != null)
+                avatar.NavigateTo(transform, _branchName, _indexInBranch);
         }
     }
 }

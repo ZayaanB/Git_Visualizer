@@ -35,6 +35,10 @@ namespace GitVisualizer.Core
         [SerializeField]
         private Material _lineMaterial;
 
+        [Header("VFX")]
+        [SerializeField]
+        private bool _useSpawnAnimation = true;
+
         private const string GraphContainerName = "GraphContainer";
         private const string NodesContainerName = "Nodes";
         private const string LinesContainerName = "Lines";
@@ -133,18 +137,30 @@ namespace GitVisualizer.Core
 
         private void SpawnBranchNodes(List<Commit> commits, float xOffset, string branchName)
         {
+            var nodesToAnimate = new List<Transform>();
+
             for (int i = 0; i < commits.Count; i++)
             {
                 var commit = commits[i];
                 var position = new Vector3(xOffset, 0f, i * _commitSpacing);
 
-                var node = CreateCommitNode(commit, position, branchName);
+                var node = CreateCommitNode(commit, position, branchName, i);
                 if (node != null)
+                {
                     node.SetParent(_nodesContainer);
+                    if (_useSpawnAnimation)
+                        nodesToAnimate.Add(node);
+                }
+            }
+
+            if (_useSpawnAnimation && nodesToAnimate.Count > 0 && VFXManager.Instance != null)
+            {
+                var targetScale = Vector3.one * _nodeScale;
+                VFXManager.Instance.PlaySpawnAnimationStaggered(nodesToAnimate.ToArray(), targetScale);
             }
         }
 
-        private Transform CreateCommitNode(Commit commit, Vector3 position, string branchName)
+        private Transform CreateCommitNode(Commit commit, Vector3 position, string branchName, int indexInBranch)
         {
             GameObject nodeObj;
 
@@ -159,12 +175,17 @@ namespace GitVisualizer.Core
             }
 
             nodeObj.name = $"Commit_{commit.sha?.Substring(0, Math.Min(7, commit.sha?.Length ?? 0)) ?? "unknown"}_{branchName}";
-            nodeObj.transform.localScale = Vector3.one * _nodeScale;
+            nodeObj.transform.localScale = _useSpawnAnimation ? Vector3.zero : Vector3.one * _nodeScale;
 
             var interactable = nodeObj.GetComponent<NodeInteractable>();
             if (interactable == null)
                 interactable = nodeObj.AddComponent<NodeInteractable>();
             interactable.SetCommit(commit);
+            interactable.SetBranchInfo(branchName, indexInBranch);
+
+            var effects = nodeObj.GetComponent<NodeClickEffects>();
+            if (effects == null)
+                nodeObj.AddComponent<NodeClickEffects>();
 
             return nodeObj.transform;
         }
