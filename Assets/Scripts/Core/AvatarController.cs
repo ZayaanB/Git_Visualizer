@@ -4,9 +4,7 @@ using UnityEngine;
 
 namespace GitVisualizer.Core
 {
-    /// <summary>
-    /// Floating ship/avatar that navigates along LineRenderer paths when the user clicks a commit node.
-    /// </summary>
+    /// <summary>Avatar that navigates along branch paths when commit nodes are clicked.</summary>
     public class AvatarController : MonoBehaviour
     {
         [Header("Movement")]
@@ -41,12 +39,6 @@ namespace GitVisualizer.Core
                 _graphContainer = graph.transform.Find("GraphContainer");
         }
 
-        /// <summary>
-        /// Navigate to the given node, following LineRenderer paths when possible.
-        /// </summary>
-        /// <param name="targetNode">The node transform to move to.</param>
-        /// <param name="branchName">Branch the target is on.</param>
-        /// <param name="indexInBranch">Index of the target in that branch.</param>
         public void NavigateTo(Transform targetNode, string branchName, int indexInBranch)
         {
             if (targetNode == null)
@@ -62,9 +54,6 @@ namespace GitVisualizer.Core
             _currentIndexInBranch = indexInBranch;
         }
 
-        /// <summary>
-        /// Navigate directly to a position (e.g. when path is unavailable).
-        /// </summary>
         public void NavigateToPosition(Vector3 worldPosition)
         {
             if (_moveCoroutine != null)

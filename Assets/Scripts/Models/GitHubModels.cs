@@ -1,16 +1,11 @@
 using System;
 
-/// <summary>
-/// Data models for parsing GitHub REST API JSON responses.
-/// All classes are serializable for use with JsonUtility or other JSON parsers.
-/// </summary>
+/// <summary>GitHub REST API data models. Serializable for JSON parsing.</summary>
 namespace GitVisualizer.Models
 {
     #region Author & User
 
-    /// <summary>
-    /// Git author/committer info from commit metadata (name, email, date).
-    /// </summary>
+    /// <summary>Git author/committer (name, email, date).</summary>
     [Serializable]
     public class GitAuthor
     {
@@ -19,9 +14,7 @@ namespace GitVisualizer.Models
         public string date;
     }
 
-    /// <summary>
-    /// GitHub user (Simple User) - appears in commits, repos, branches.
-    /// </summary>
+    /// <summary>GitHub user (Simple User).</summary>
     [Serializable]
     public class GitHubUser
     {
@@ -42,9 +35,7 @@ namespace GitVisualizer.Models
 
     #region Repository
 
-    /// <summary>
-    /// Repository owner - minimal user reference.
-    /// </summary>
+    /// <summary>Repository owner.</summary>
     [Serializable]
     public class RepositoryOwner
     {
@@ -57,9 +48,7 @@ namespace GitVisualizer.Models
         public string type;
     }
 
-    /// <summary>
-    /// GitHub repository from GET /repos/{owner}/{repo}.
-    /// </summary>
+    /// <summary>Repository from GET /repos/{owner}/{repo}.</summary>
     [Serializable]
     public class Repository
     {
@@ -90,9 +79,7 @@ namespace GitVisualizer.Models
 
     #region Branch
 
-    /// <summary>
-    /// Commit reference within a branch (sha + url).
-    /// </summary>
+    /// <summary>Branch commit reference (sha, url).</summary>
     [Serializable]
     public class BranchCommit
     {
@@ -100,9 +87,7 @@ namespace GitVisualizer.Models
         public string url;
     }
 
-    /// <summary>
-    /// Branch from GET /repos/{owner}/{repo}/branches.
-    /// </summary>
+    /// <summary>Branch from GET /repos/{owner}/{repo}/branches.</summary>
     [Serializable]
     public class Branch
     {
@@ -115,9 +100,7 @@ namespace GitVisualizer.Models
 
     #region Commit
 
-    /// <summary>
-    /// Inner commit object with author, committer, and message.
-    /// </summary>
+    /// <summary>Inner commit (author, committer, message).</summary>
     [Serializable]
     public class CommitInfo
     {
@@ -129,9 +112,7 @@ namespace GitVisualizer.Models
         public int comment_count;
     }
 
-    /// <summary>
-    /// Tree reference in a commit.
-    /// </summary>
+    /// <summary>Commit tree reference.</summary>
     [Serializable]
     public class CommitTree
     {
@@ -139,9 +120,7 @@ namespace GitVisualizer.Models
         public string url;
     }
 
-    /// <summary>
-    /// Full commit from GET /repos/{owner}/{repo}/commits.
-    /// </summary>
+    /// <summary>Full commit from GET /repos/{owner}/{repo}/commits.</summary>
     [Serializable]
     public class Commit
     {
@@ -155,9 +134,7 @@ namespace GitVisualizer.Models
         public CommitParent[] parents;
     }
 
-    /// <summary>
-    /// Parent commit reference.
-    /// </summary>
+    /// <summary>Parent commit reference.</summary>
     [Serializable]
     public class CommitParent
     {

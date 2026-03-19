@@ -2,10 +2,7 @@ using UnityEngine;
 
 namespace GitVisualizer.Core
 {
-    /// <summary>
-    /// Orbit camera with pan (WASD), zoom (scroll), and orbit (right-click drag) around a target.
-    /// Attach to Main Camera.
-    /// </summary>
+    /// <summary>Orbit camera: WASD pan, scroll zoom, right-drag orbit.</summary>
     [RequireComponent(typeof(Camera))]
     public class OrbitCamera : MonoBehaviour
     {
@@ -123,9 +120,6 @@ namespace GitVisualizer.Core
             return _target != null ? _target.position : Vector3.zero;
         }
 
-        /// <summary>
-        /// Sets the orbit target (e.g., graph center).
-        /// </summary>
         public void SetTarget(Transform target)
         {
             _target = target;
