@@ -161,6 +161,11 @@ namespace GitVisualizer.Core
             nodeObj.name = $"Commit_{commit.sha?.Substring(0, Math.Min(7, commit.sha?.Length ?? 0)) ?? "unknown"}_{branchName}";
             nodeObj.transform.localScale = Vector3.one * _nodeScale;
 
+            var interactable = nodeObj.GetComponent<NodeInteractable>();
+            if (interactable == null)
+                interactable = nodeObj.AddComponent<NodeInteractable>();
+            interactable.SetCommit(commit);
+
             return nodeObj.transform;
         }
 
