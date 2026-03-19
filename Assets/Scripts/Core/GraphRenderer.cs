@@ -7,34 +7,23 @@ using GitVisualizer.Services;
 
 namespace GitVisualizer.Core
 {
-    /// <summary>Renders commits as 3D nodes with branch lines. Z = time, X = branch.</summary>
     [RequireComponent(typeof(Transform))]
     public class GraphRenderer : MonoBehaviour
     {
         [Header("Prefabs & References")]
-        [SerializeField]
-        private GameObject _commitNodePrefab;
+        [SerializeField] private GameObject _commitNodePrefab;
 
-        [Header("Layout Settings")]
-        [SerializeField]
-        private float _branchSpacing = 3f;
+        [Header("Layout")]
+        [SerializeField] private float _branchSpacing = 3f;
+        [SerializeField] private float _commitSpacing = 1.5f;
+        [SerializeField] private float _nodeScale = 0.3f;
 
-        [SerializeField]
-        private float _commitSpacing = 1.5f;
-
-        [SerializeField]
-        private float _nodeScale = 0.3f;
-
-        [Header("Line Renderer")]
-        [SerializeField]
-        private float _lineWidth = 0.05f;
-
-        [SerializeField]
-        private Material _lineMaterial;
+        [Header("Lines")]
+        [SerializeField] private float _lineWidth = 0.05f;
+        [SerializeField] private Material _lineMaterial;
 
         [Header("VFX")]
-        [SerializeField]
-        private bool _useSpawnAnimation = true;
+        [SerializeField] private bool _useSpawnAnimation = true;
 
         private const string GraphContainerName = "GraphContainer";
         private const string NodesContainerName = "Nodes";
@@ -51,7 +40,6 @@ namespace GitVisualizer.Core
                 Debug.LogError("[GraphRenderer] RepoDataResult or Branches is null.");
                 return;
             }
-
             var commitsByBranch = data.CommitsByBranch ?? new Dictionary<string, Commit[]>();
             SpawnGraph(data.Branches.ToList(), commitsByBranch);
         }
@@ -76,7 +64,7 @@ namespace GitVisualizer.Core
                 var commitsList = commits.ToList();
                 SortCommitsByDate(commitsList);
 
-                var branchColor = GetBranchColor(branchName, i, branches.Count);
+                var branchColor = GetBranchColor(branchName);
                 var xOffset = i * _branchSpacing;
 
                 SpawnBranchNodes(commitsList, xOffset, branchName);
@@ -88,9 +76,7 @@ namespace GitVisualizer.Core
         {
             var existing = transform.Find(GraphContainerName);
             if (existing != null)
-            {
                 DestroyImmediate(existing.gameObject);
-            }
 
             _graphContainer = new GameObject(GraphContainerName).transform;
             _graphContainer.SetParent(transform, false);
@@ -116,9 +102,7 @@ namespace GitVisualizer.Core
         private static DateTime ParseCommitDate(Commit commit)
         {
             var dateStr = commit?.commit?.committer?.date ?? commit?.commit?.author?.date;
-            if (string.IsNullOrEmpty(dateStr))
-                return DateTime.MinValue;
-
+            if (string.IsNullOrEmpty(dateStr)) return DateTime.MinValue;
             return DateTime.TryParse(dateStr, out var dt) ? dt : DateTime.MinValue;
         }
 
@@ -130,7 +114,6 @@ namespace GitVisualizer.Core
             {
                 var commit = commits[i];
                 var position = new Vector3(xOffset, 0f, i * _commitSpacing);
-
                 var node = CreateCommitNode(commit, position, branchName, i);
                 if (node != null)
                 {
@@ -141,90 +124,65 @@ namespace GitVisualizer.Core
             }
 
             if (_useSpawnAnimation && nodesToAnimate.Count > 0 && VFXManager.Instance != null)
-            {
-                var targetScale = Vector3.one * _nodeScale;
-                VFXManager.Instance.PlaySpawnAnimationStaggered(nodesToAnimate.ToArray(), targetScale);
-            }
+                VFXManager.Instance.PlaySpawnAnimationStaggered(nodesToAnimate.ToArray(), Vector3.one * _nodeScale);
         }
 
         private Transform CreateCommitNode(Commit commit, Vector3 position, string branchName, int indexInBranch)
         {
-            GameObject nodeObj;
+            GameObject nodeObj = _commitNodePrefab != null
+                ? Instantiate(_commitNodePrefab, position, Quaternion.identity)
+                : CreatePrimitiveNode(position);
 
-            if (_commitNodePrefab != null)
-            {
-                nodeObj = Instantiate(_commitNodePrefab, position, Quaternion.identity);
-            }
-            else
-            {
-                nodeObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                nodeObj.transform.position = position;
-            }
-
-            nodeObj.name = $"Commit_{commit.sha?.Substring(0, Math.Min(7, commit.sha?.Length ?? 0)) ?? "unknown"}_{branchName}";
+            var shortSha = commit.sha?.Length > 7 ? commit.sha.Substring(0, 7) : commit.sha ?? "unknown";
+            nodeObj.name = $"Commit_{shortSha}_{branchName}";
             nodeObj.transform.localScale = _useSpawnAnimation ? Vector3.zero : Vector3.one * _nodeScale;
 
-            var interactable = nodeObj.GetComponent<NodeInteractable>();
-            if (interactable == null)
-                interactable = nodeObj.AddComponent<NodeInteractable>();
+            var interactable = nodeObj.GetComponent<NodeInteractable>() ?? nodeObj.AddComponent<NodeInteractable>();
             interactable.SetCommit(commit);
             interactable.SetBranchInfo(branchName, indexInBranch);
 
-            var effects = nodeObj.GetComponent<NodeClickEffects>();
-            if (effects == null)
+            if (nodeObj.GetComponent<NodeClickEffects>() == null)
                 nodeObj.AddComponent<NodeClickEffects>();
 
             return nodeObj.transform;
         }
 
+        private static GameObject CreatePrimitiveNode(Vector3 position)
+        {
+            var obj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            obj.transform.position = position;
+            return obj;
+        }
+
         private void SpawnBranchLines(List<Commit> commits, float xOffset, Color branchColor, string branchName)
         {
-            if (commits.Count < 2)
-                return;
+            if (commits.Count < 2) return;
 
             var lineObj = new GameObject($"Line_{branchName}");
             lineObj.transform.SetParent(_linesContainer, false);
 
             var lineRenderer = lineObj.AddComponent<LineRenderer>();
-            ConfigureLineRenderer(lineRenderer, branchColor);
+            lineRenderer.startWidth = _lineWidth;
+            lineRenderer.endWidth = _lineWidth * 0.5f;
+            lineRenderer.useWorldSpace = true;
+            lineRenderer.loop = false;
+            lineRenderer.startColor = lineRenderer.endColor = branchColor;
+            lineRenderer.material = _lineMaterial != null
+                ? _lineMaterial
+                : new Material(Shader.Find("Sprites/Default")) { color = branchColor };
 
             var positions = new Vector3[commits.Count];
             for (int i = 0; i < commits.Count; i++)
-            {
                 positions[i] = new Vector3(xOffset, 0f, i * _commitSpacing);
-            }
 
             lineRenderer.positionCount = positions.Length;
             lineRenderer.SetPositions(positions);
         }
 
-        private void ConfigureLineRenderer(LineRenderer lineRenderer, Color color)
+        private static Color GetBranchColor(string branchName)
         {
-            lineRenderer.startWidth = _lineWidth;
-            lineRenderer.endWidth = _lineWidth * 0.5f;
-            lineRenderer.useWorldSpace = true;
-            lineRenderer.loop = false;
-            lineRenderer.startColor = color;
-            lineRenderer.endColor = color;
-
-            if (_lineMaterial != null)
-            {
-                lineRenderer.material = _lineMaterial;
-            }
-            else
-            {
-                lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-                lineRenderer.material.color = color;
-            }
-        }
-
-        private Color GetBranchColor(string branchName, int index, int total)
-        {
-            var hash = branchName.GetHashCode();
-            var hue = (Math.Abs(hash) % 360) / 360f;
-            var saturation = 0.8f;
-            var value = 0.9f;
-            return Color.HSVToRGB(hue, saturation, value);
+            var hue = (Math.Abs(branchName.GetHashCode()) % 360) / 360f;
+            return Color.HSVToRGB(hue, 0.8f, 0.9f);
         }
     }
 }

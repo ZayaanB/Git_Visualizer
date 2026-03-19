@@ -2,41 +2,27 @@ using UnityEngine;
 
 namespace GitVisualizer.Core
 {
-    /// <summary>Orbit camera: WASD pan, scroll zoom, right-drag orbit.</summary>
     [RequireComponent(typeof(Camera))]
     public class OrbitCamera : MonoBehaviour
     {
         [Header("Target")]
-        [SerializeField]
-        private Transform _target;
+        [SerializeField] private Transform _target;
 
-        [Header("Orbit (Right-Click Drag)")]
-        [SerializeField]
-        private float _orbitSpeed = 120f;
-
-        [SerializeField]
-        private float _minVerticalAngle = -89f;
-
-        [SerializeField]
-        private float _maxVerticalAngle = 89f;
+        [Header("Orbit (Right-Drag)")]
+        [SerializeField] private float _orbitSpeed = 120f;
+        [SerializeField] private float _minVerticalAngle = -89f;
+        [SerializeField] private float _maxVerticalAngle = 89f;
 
         [Header("Pan (WASD)")]
-        [SerializeField]
-        private float _panSpeed = 8f;
+        [SerializeField] private float _panSpeed = 8f;
 
-        [Header("Zoom (Scroll Wheel)")]
-        [SerializeField]
-        private float _zoomSpeed = 5f;
-
-        [SerializeField]
-        private float _minDistance = 2f;
-
-        [SerializeField]
-        private float _maxDistance = 100f;
+        [Header("Zoom (Scroll)")]
+        [SerializeField] private float _zoomSpeed = 5f;
+        [SerializeField] private float _minDistance = 2f;
+        [SerializeField] private float _maxDistance = 100f;
 
         [Header("Smoothing")]
-        [SerializeField]
-        private float _smoothTime = 0.15f;
+        [SerializeField] private float _smoothTime = 0.15f;
 
         private float _currentYaw;
         private float _currentPitch;
@@ -48,11 +34,9 @@ namespace GitVisualizer.Core
         {
             var toCam = transform.position - GetTargetPosition();
             _currentDistance = Mathf.Clamp(toCam.magnitude, _minDistance, _maxDistance);
-
             var dir = toCam.normalized;
             _currentYaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
             _currentPitch = Mathf.Asin(Mathf.Clamp(dir.y, -1f, 1f)) * Mathf.Rad2Deg;
-
             _panOffset = Vector3.zero;
         }
 
@@ -66,14 +50,9 @@ namespace GitVisualizer.Core
 
         private void HandleOrbit()
         {
-            if (!Input.GetMouseButton(1))
-                return;
-
-            var deltaX = Input.GetAxis("Mouse X");
-            var deltaY = Input.GetAxis("Mouse Y");
-
-            _currentYaw += deltaX * _orbitSpeed * Time.deltaTime;
-            _currentPitch -= deltaY * _orbitSpeed * Time.deltaTime;
+            if (!Input.GetMouseButton(1)) return;
+            _currentYaw += Input.GetAxis("Mouse X") * _orbitSpeed * Time.deltaTime;
+            _currentPitch -= Input.GetAxis("Mouse Y") * _orbitSpeed * Time.deltaTime;
             _currentPitch = Mathf.Clamp(_currentPitch, _minVerticalAngle, _maxVerticalAngle);
         }
 
@@ -106,7 +85,6 @@ namespace GitVisualizer.Core
         private void UpdateCameraPosition()
         {
             var targetPos = GetTargetPosition() + _panOffset;
-
             var rotation = Quaternion.Euler(_currentPitch, _currentYaw, 0f);
             var offset = rotation * new Vector3(0f, 0f, -_currentDistance);
             var desiredPosition = targetPos + offset;
@@ -115,14 +93,8 @@ namespace GitVisualizer.Core
             transform.LookAt(targetPos + _panOffset);
         }
 
-        private Vector3 GetTargetPosition()
-        {
-            return _target != null ? _target.position : Vector3.zero;
-        }
+        private Vector3 GetTargetPosition() => _target != null ? _target.position : Vector3.zero;
 
-        public void SetTarget(Transform target)
-        {
-            _target = target;
-        }
+        public void SetTarget(Transform target) => _target = target;
     }
 }
