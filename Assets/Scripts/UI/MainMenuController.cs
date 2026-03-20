@@ -39,7 +39,7 @@ namespace GitVisualizer.UI
                 scaler.referenceResolution = new Vector2(1920, 1080);
                 scaler.matchWidthOrHeight = 0.5f;
                 gameObject.AddComponent<GraphicRaycaster>();
-                if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+                if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
                 {
                     var es = new GameObject("EventSystem").AddComponent<UnityEngine.EventSystems.EventSystem>();
                     es.gameObject.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();

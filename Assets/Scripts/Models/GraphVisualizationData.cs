@@ -5,9 +5,6 @@ using UnityEngine;
 
 namespace GitVisualizer.Models
 {
-    /// <summary>
-    /// Serializable node data for network transmission.
-    /// </summary>
     public struct GraphNodeData : INetworkSerializable
     {
         public Vector3 Position;
@@ -28,9 +25,6 @@ namespace GitVisualizer.Models
         }
     }
 
-    /// <summary>
-    /// Serializable branch data for network transmission.
-    /// </summary>
     public struct BranchVisualizationData : INetworkSerializable
     {
         public FixedString64Bytes BranchName;
@@ -62,9 +56,6 @@ namespace GitVisualizer.Models
         }
     }
 
-    /// <summary>
-    /// Full graph visualization payload for ClientRpc.
-    /// </summary>
     public struct GraphVisualizationPayload : INetworkSerializable
     {
         public int BranchCount;

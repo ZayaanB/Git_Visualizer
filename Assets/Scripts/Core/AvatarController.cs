@@ -47,7 +47,7 @@ namespace GitVisualizer.Core
 
         private void SetCameraToFollowThis()
         {
-            var cam = FindObjectOfType<OrbitCamera>();
+            var cam = FindFirstObjectByType<OrbitCamera>();
             if (cam != null)
                 cam.SetTarget(transform);
         }
@@ -62,7 +62,7 @@ namespace GitVisualizer.Core
         private void EnsureGraphContainer()
         {
             if (_graphContainer != null) return;
-            var graph = FindObjectOfType<GraphRenderer>();
+            var graph = FindFirstObjectByType<GraphRenderer>();
             if (graph != null)
                 _graphContainer = graph.transform.Find("GraphContainer");
         }

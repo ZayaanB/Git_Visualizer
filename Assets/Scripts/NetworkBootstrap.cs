@@ -55,7 +55,7 @@ namespace GitVisualizer
             if (_sceneAvatar == null)
                 _sceneAvatar = GameObject.Find("Avatar");
             if (_orbitCamera == null)
-                _orbitCamera = FindObjectOfType<OrbitCamera>();
+                _orbitCamera = FindFirstObjectByType<OrbitCamera>();
         }
 
         private void Start()
@@ -85,16 +85,6 @@ namespace GitVisualizer
         private void ShowCoopUI()
         {
             if (_coopModePanel != null) _coopModePanel.SetActive(true);
-        }
-
-        private void HideJoinPanel()
-        {
-            if (_joinPanel != null) _joinPanel.SetActive(false);
-        }
-
-        private void ShowJoinPanel()
-        {
-            if (_joinPanel != null) _joinPanel.SetActive(true);
         }
 
         private void BindCoopButtons()
@@ -150,9 +140,6 @@ namespace GitVisualizer
                 _sceneAvatar.SetActive(true);
         }
 
-        /// <summary>
-        /// Builds the Co-op UI at runtime if references are null (similar to MainMenuController).
-        /// </summary>
         public void BuildCoopUIIfNeeded()
         {
             if (_coopModePanel != null && _joinPanel != null) return;
@@ -166,7 +153,7 @@ namespace GitVisualizer
                 canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>().uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 canvasObj.GetComponent<UnityEngine.UI.CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
                 canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
-                if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+                if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
                 {
                     var es = new GameObject("EventSystem").AddComponent<UnityEngine.EventSystems.EventSystem>();
                     es.gameObject.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();

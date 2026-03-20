@@ -20,6 +20,7 @@ namespace GitVisualizer.Editor
             EnsureNetworkBootstrap();
             EnsureAvatarPrefabAndNetworkObject();
             EnsureGraphRendererWithNetworkObject();
+            EnsureGameLoopManager();
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -82,7 +83,7 @@ namespace GitVisualizer.Editor
             canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
             canvasObj.AddComponent<GitVisualizer.UI.MainMenuController>();
 
-            if (Object.FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+            if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
                 var esObj = new GameObject("EventSystem");
                 esObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
@@ -104,7 +105,7 @@ namespace GitVisualizer.Editor
 
         private static void EnsureNetworkManager()
         {
-            var nm = Object.FindObjectOfType<NetworkManager>();
+            var nm = Object.FindFirstObjectByType<NetworkManager>();
             if (nm != null)
             {
                 if (nm.GetComponent<UnityTransport>() == null)
@@ -120,7 +121,7 @@ namespace GitVisualizer.Editor
 
         private static void EnsureNetworkBootstrap()
         {
-            if (Object.FindObjectOfType<GitVisualizer.NetworkBootstrap>() != null) return;
+            if (Object.FindFirstObjectByType<GitVisualizer.NetworkBootstrap>() != null) return;
 
             var go = new GameObject("NetworkBootstrap");
             go.AddComponent<GitVisualizer.NetworkBootstrap>();
@@ -141,7 +142,7 @@ namespace GitVisualizer.Editor
             if (sceneAvatar.GetComponent<NetworkObject>() == null)
                 sceneAvatar.AddComponent<NetworkObject>();
 
-            var nm = Object.FindObjectOfType<NetworkManager>();
+            var nm = Object.FindFirstObjectByType<NetworkManager>();
             if (nm == null) return;
 
             GameObject prefab;
@@ -176,7 +177,7 @@ namespace GitVisualizer.Editor
 
         private static void EnsureGraphRendererWithNetworkObject()
         {
-            var graphRenderer = Object.FindObjectOfType<GitVisualizer.Core.GraphRenderer>();
+            var graphRenderer = Object.FindFirstObjectByType<GitVisualizer.Core.GraphRenderer>();
             if (graphRenderer == null)
             {
                 var go = new GameObject("GraphRenderer");
@@ -188,6 +189,17 @@ namespace GitVisualizer.Editor
                 graphRenderer.gameObject.AddComponent<NetworkObject>();
                 Debug.Log("[Git Visualizer] Added NetworkObject to GraphRenderer.");
             }
+        }
+
+        private static void EnsureGameLoopManager()
+        {
+            if (Object.FindFirstObjectByType<GitVisualizer.GameLoopManager>() != null) return;
+
+            var go = new GameObject("GameLoopManager");
+            go.AddComponent<GitVisualizer.GameLoopManager>();
+            if (go.GetComponent<NetworkObject>() == null)
+                go.AddComponent<NetworkObject>();
+            Debug.Log("[Git Visualizer] Added GameLoopManager.");
         }
     }
 }
