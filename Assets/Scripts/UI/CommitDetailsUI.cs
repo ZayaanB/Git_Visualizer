@@ -63,7 +63,7 @@ namespace GitVisualizer.UI
                 gameObject.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
                 gameObject.AddComponent<CanvasScaler>();
                 gameObject.AddComponent<GraphicRaycaster>();
-                if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+                if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
                 {
                     var es = new GameObject("EventSystem").AddComponent<UnityEngine.EventSystems.EventSystem>();
                     es.gameObject.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();

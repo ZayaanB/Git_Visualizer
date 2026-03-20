@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 using Unity.Netcode;
 using GitVisualizer.Models;
@@ -11,6 +12,8 @@ namespace GitVisualizer.Core
     [RequireComponent(typeof(NetworkObject))]
     public class GraphRenderer : NetworkBehaviour
     {
+        private const int MaxLineVertices = 128;
+
         [Header("Prefabs & References")]
         [SerializeField] private GameObject _commitNodePrefab;
 
@@ -30,15 +33,14 @@ namespace GitVisualizer.Core
         private const string NodesContainerName = "Nodes";
         private const string LinesContainerName = "Lines";
 
+        public static event Action<int> OnGraphReady;
+
         private Transform _graphContainer;
         private Transform _nodesContainer;
         private Transform _linesContainer;
+        private CommitNodePool _nodePool;
+        private Material _lineMaterialInstance;
 
-        /// <summary>
-        /// Loads repo data, computes graph, spawns locally (Host only), and syncs to clients.
-        /// Call this to trigger graph load. Only the Host performs fetch and computation.
-        /// In Solo mode (!IsSpawned), fetches and spawns locally.
-        /// </summary>
         public async void SpawnGraphFromRepo(string owner, string repoName, string personalAccessToken = "")
         {
             if (IsServer || !IsSpawned)
@@ -54,9 +56,6 @@ namespace GitVisualizer.Core
             }
         }
 
-        /// <summary>
-        /// Direct spawn from RepoDataResult. Host syncs to clients; Solo spawns locally.
-        /// </summary>
         public void SpawnGraph(GitHubService.RepoDataResult data)
         {
             if (data?.Branches == null)
@@ -65,9 +64,7 @@ namespace GitVisualizer.Core
                 return;
             }
             if (IsServer)
-            {
                 SpawnGraphAndSyncToClients(data);
-            }
             else if (!IsSpawned)
             {
                 var commitsByBranch = data.CommitsByBranch ?? new Dictionary<string, Commit[]>();
@@ -76,9 +73,6 @@ namespace GitVisualizer.Core
             }
         }
 
-        /// <summary>
-        /// Legacy overload. Host computes and syncs; Solo spawns locally.
-        /// </summary>
         public void SpawnGraph(List<Branch> branches, IReadOnlyDictionary<string, Commit[]> commitsByBranch)
         {
             if (branches == null || branches.Count == 0)
@@ -86,17 +80,14 @@ namespace GitVisualizer.Core
                 Debug.LogWarning("[GraphRenderer] No branches to render.");
                 return;
             }
+            var payload = BuildVisualizationPayload(branches, commitsByBranch);
             if (IsServer)
             {
-                var payload = BuildVisualizationPayload(branches, commitsByBranch);
                 SpawnGraphLocal(payload);
                 SyncGraphToClientsClientRpc(payload);
             }
             else if (!IsSpawned)
-            {
-                var payload = BuildVisualizationPayload(branches, commitsByBranch);
                 SpawnGraphLocal(payload);
-            }
         }
 
         private void SpawnGraphAndSyncToClients(GitHubService.RepoDataResult data)
@@ -165,11 +156,13 @@ namespace GitVisualizer.Core
             if (string.IsNullOrEmpty(s)) return default;
             return new FixedString64Bytes(s.Length <= maxChars ? s : s.Substring(0, maxChars));
         }
+
         private static FixedString128Bytes Truncate128(string s, int maxChars = 120)
         {
             if (string.IsNullOrEmpty(s)) return default;
             return new FixedString128Bytes(s.Length <= maxChars ? s : s.Substring(0, maxChars));
         }
+
         private static FixedString512Bytes Truncate512(string s, int maxChars = 500)
         {
             if (string.IsNullOrEmpty(s)) return default;
@@ -188,6 +181,10 @@ namespace GitVisualizer.Core
             if (payload.Branches == null || payload.BranchCount == 0) return;
 
             EnsureGraphContainer();
+            _nodePool ??= new CommitNodePool(_commitNodePrefab, _nodesContainer, 64);
+            _nodePool.ReturnAll();
+
+            int globalIndex = 0;
 
             for (int b = 0; b < payload.BranchCount && b < payload.Branches.Count; b++)
             {
@@ -198,12 +195,14 @@ namespace GitVisualizer.Core
                 var color = new Color(branchData.ColorRgb.x, branchData.ColorRgb.y, branchData.ColorRgb.z);
                 var xOffset = b * _branchSpacing;
 
-                SpawnBranchNodesFromPayload(branchData, xOffset, branchName);
+                SpawnBranchNodesFromPayload(branchData, xOffset, branchName, ref globalIndex);
                 SpawnBranchLinesFromPayload(branchData, xOffset, color, branchName);
             }
+
+            OnGraphReady?.Invoke(globalIndex);
         }
 
-        private void SpawnBranchNodesFromPayload(BranchVisualizationData branchData, float xOffset, string branchName)
+        private void SpawnBranchNodesFromPayload(BranchVisualizationData branchData, float xOffset, string branchName, ref int globalIndex)
         {
             var nodesToAnimate = new List<Transform>();
 
@@ -211,24 +210,23 @@ namespace GitVisualizer.Core
             {
                 var nodeData = branchData.Nodes[i];
                 var position = nodeData.Position;
-                var node = CreateCommitNodeFromPayload(nodeData, position, branchName);
+                var node = CreateCommitNodeFromPayload(nodeData, position, branchName, globalIndex);
                 if (node != null)
                 {
                     node.SetParent(_nodesContainer);
                     if (_useSpawnAnimation)
                         nodesToAnimate.Add(node);
                 }
+                globalIndex++;
             }
 
             if (_useSpawnAnimation && nodesToAnimate.Count > 0 && VFXManager.Instance != null)
                 VFXManager.Instance.PlaySpawnAnimationStaggered(nodesToAnimate.ToArray(), Vector3.one * _nodeScale);
         }
 
-        private Transform CreateCommitNodeFromPayload(GraphNodeData nodeData, Vector3 position, string branchName)
+        private Transform CreateCommitNodeFromPayload(GraphNodeData nodeData, Vector3 position, string branchName, int globalIndex)
         {
-            GameObject nodeObj = _commitNodePrefab != null
-                ? Instantiate(_commitNodePrefab, position, Quaternion.identity)
-                : CreatePrimitiveNode(position);
+            var nodeObj = _nodePool.Get(position, Quaternion.identity);
 
             var shortSha = nodeData.Sha.ToString().Length > 7 ? nodeData.Sha.ToString().Substring(0, 7) : nodeData.Sha.ToString();
             nodeObj.name = $"Commit_{shortSha}_{branchName}";
@@ -238,6 +236,7 @@ namespace GitVisualizer.Core
             var interactable = nodeObj.GetComponent<NodeInteractable>() ?? nodeObj.AddComponent<NodeInteractable>();
             interactable.SetCommit(commit);
             interactable.SetBranchInfo(branchName, nodeData.IndexInBranch);
+            interactable.SetGlobalIndex(globalIndex);
 
             if (nodeObj.GetComponent<NodeClickEffects>() == null)
                 nodeObj.AddComponent<NodeClickEffects>();
@@ -271,16 +270,32 @@ namespace GitVisualizer.Core
             lineRenderer.endWidth = _lineWidth * 0.5f;
             lineRenderer.useWorldSpace = true;
             lineRenderer.loop = false;
-            lineRenderer.startColor = lineRenderer.endColor = branchColor;
-            lineRenderer.material = _lineMaterial != null
+
+            _lineMaterialInstance ??= _lineMaterial != null
                 ? _lineMaterial
-                : new Material(Shader.Find("Sprites/Default")) { color = branchColor };
+                : new Material(Shader.Find("Sprites/Default"));
+            lineRenderer.sharedMaterial = _lineMaterialInstance;
+            lineRenderer.startColor = lineRenderer.endColor = branchColor;
 
-            var positions = new Vector3[branchData.NodeCount];
-            for (int i = 0; i < branchData.NodeCount; i++)
-                positions[i] = branchData.Nodes[i].Position;
+            int vertexCount = Mathf.Min(branchData.NodeCount, MaxLineVertices);
+            var positions = new Vector3[vertexCount];
 
-            lineRenderer.positionCount = positions.Length;
+            if (vertexCount == branchData.NodeCount)
+            {
+                for (int i = 0; i < vertexCount; i++)
+                    positions[i] = branchData.Nodes[i].Position;
+            }
+            else
+            {
+                for (int i = 0; i < vertexCount; i++)
+                {
+                    float t = (float)i / (vertexCount - 1);
+                    int idx = Mathf.RoundToInt(t * (branchData.NodeCount - 1));
+                    positions[i] = branchData.Nodes[idx].Position;
+                }
+            }
+
+            lineRenderer.positionCount = vertexCount;
             lineRenderer.SetPositions(positions);
         }
 
@@ -288,7 +303,11 @@ namespace GitVisualizer.Core
         {
             var existing = transform.Find(GraphContainerName);
             if (existing != null)
-                DestroyImmediate(existing.gameObject);
+            {
+                _nodePool?.DestroyAll();
+                _nodePool = null;
+                Object.DestroyImmediate(existing.gameObject);
+            }
 
             _graphContainer = new GameObject(GraphContainerName).transform;
             _graphContainer.SetParent(transform, false);
@@ -318,83 +337,17 @@ namespace GitVisualizer.Core
             return DateTime.TryParse(dateStr, out var dt) ? dt : DateTime.MinValue;
         }
 
-        private void SpawnBranchNodes(List<Commit> commits, float xOffset, string branchName)
-        {
-            var nodesToAnimate = new List<Transform>();
-
-            for (int i = 0; i < commits.Count; i++)
-            {
-                var commit = commits[i];
-                var position = new Vector3(xOffset, 0f, i * _commitSpacing);
-                var node = CreateCommitNode(commit, position, branchName, i);
-                if (node != null)
-                {
-                    node.SetParent(_nodesContainer);
-                    if (_useSpawnAnimation)
-                        nodesToAnimate.Add(node);
-                }
-            }
-
-            if (_useSpawnAnimation && nodesToAnimate.Count > 0 && VFXManager.Instance != null)
-                VFXManager.Instance.PlaySpawnAnimationStaggered(nodesToAnimate.ToArray(), Vector3.one * _nodeScale);
-        }
-
-        private Transform CreateCommitNode(Commit commit, Vector3 position, string branchName, int indexInBranch)
-        {
-            GameObject nodeObj = _commitNodePrefab != null
-                ? Instantiate(_commitNodePrefab, position, Quaternion.identity)
-                : CreatePrimitiveNode(position);
-
-            var shortSha = commit.sha?.Length > 7 ? commit.sha.Substring(0, 7) : commit.sha ?? "unknown";
-            nodeObj.name = $"Commit_{shortSha}_{branchName}";
-            nodeObj.transform.localScale = _useSpawnAnimation ? Vector3.zero : Vector3.one * _nodeScale;
-
-            var interactable = nodeObj.GetComponent<NodeInteractable>() ?? nodeObj.AddComponent<NodeInteractable>();
-            interactable.SetCommit(commit);
-            interactable.SetBranchInfo(branchName, indexInBranch);
-
-            if (nodeObj.GetComponent<NodeClickEffects>() == null)
-                nodeObj.AddComponent<NodeClickEffects>();
-
-            return nodeObj.transform;
-        }
-
-        private static GameObject CreatePrimitiveNode(Vector3 position)
-        {
-            var obj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            obj.transform.position = position;
-            return obj;
-        }
-
-        private void SpawnBranchLines(List<Commit> commits, float xOffset, Color branchColor, string branchName)
-        {
-            if (commits.Count < 2) return;
-
-            var lineObj = new GameObject($"Line_{branchName}");
-            lineObj.transform.SetParent(_linesContainer, false);
-
-            var lineRenderer = lineObj.AddComponent<LineRenderer>();
-            lineRenderer.startWidth = _lineWidth;
-            lineRenderer.endWidth = _lineWidth * 0.5f;
-            lineRenderer.useWorldSpace = true;
-            lineRenderer.loop = false;
-            lineRenderer.startColor = lineRenderer.endColor = branchColor;
-            lineRenderer.material = _lineMaterial != null
-                ? _lineMaterial
-                : new Material(Shader.Find("Sprites/Default")) { color = branchColor };
-
-            var positions = new Vector3[commits.Count];
-            for (int i = 0; i < commits.Count; i++)
-                positions[i] = new Vector3(xOffset, 0f, i * _commitSpacing);
-
-            lineRenderer.positionCount = positions.Length;
-            lineRenderer.SetPositions(positions);
-        }
-
         private static Color GetBranchColor(string branchName)
         {
             var hue = (Math.Abs(branchName.GetHashCode()) % 360) / 360f;
             return Color.HSVToRGB(hue, 0.8f, 0.9f);
+        }
+
+        private void OnDestroy()
+        {
+            _nodePool?.DestroyAll();
+            if (_lineMaterialInstance != null && _lineMaterial == null)
+                Object.Destroy(_lineMaterialInstance);
         }
     }
 }

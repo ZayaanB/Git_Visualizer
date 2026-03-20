@@ -5,6 +5,8 @@ namespace GitVisualizer.Core
     [RequireComponent(typeof(Collider))]
     public class NodeClickEffects : MonoBehaviour
     {
+        private static Material s_sharedParticleMaterial;
+
         [SerializeField] private ParticleSystem _clickParticles;
         [SerializeField] private int _burstCount = 12;
         [SerializeField] private float _particleLifetime = 0.5f;
@@ -48,14 +50,15 @@ namespace GitVisualizer.Core
             shape.shapeType = ParticleSystemShapeType.Sphere;
             shape.radius = 0.2f;
 
-            var renderer = psObj.GetComponent<ParticleSystemRenderer>();
-            renderer.renderMode = ParticleSystemRenderMode.Billboard;
-            var shader = Shader.Find("Particles/Standard Unlit") ?? Shader.Find("Sprites/Default");
-            if (shader != null)
+            var psRenderer = psObj.GetComponent<ParticleSystemRenderer>();
+            psRenderer.renderMode = ParticleSystemRenderMode.Billboard;
+            if (s_sharedParticleMaterial == null)
             {
-                renderer.material = new Material(shader);
-                renderer.material.color = new Color(1f, 0.95f, 0.7f, 0.9f);
+                var shader = Shader.Find("Particles/Standard Unlit") ?? Shader.Find("Sprites/Default");
+                s_sharedParticleMaterial = shader != null ? new Material(shader) { color = new Color(1f, 0.95f, 0.7f, 0.9f) } : null;
             }
+            if (s_sharedParticleMaterial != null)
+                psRenderer.sharedMaterial = s_sharedParticleMaterial;
         }
     }
 }
