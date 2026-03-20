@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Netcode;
 
 namespace GitVisualizer.Core
 {
-    public class AvatarController : MonoBehaviour
+    [RequireComponent(typeof(NetworkObject))]
+    public class AvatarController : NetworkBehaviour
     {
         [Header("Movement")]
         [SerializeField] private float _moveSpeed = 4f;
@@ -19,6 +21,44 @@ namespace GitVisualizer.Core
         private int _currentIndexInBranch = -1;
         private Coroutine _moveCoroutine;
 
+        /// <summary>
+        /// The local player's avatar (for Solo: any avatar; for Co-op: the one we own).
+        /// </summary>
+        public static AvatarController LocalInstance { get; private set; }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            if (IsOwner)
+            {
+                LocalInstance = this;
+                SetCameraToFollowThis();
+            }
+        }
+
+        private void Start()
+        {
+            if (!IsSpawned)
+            {
+                LocalInstance = this;
+                SetCameraToFollowThis();
+            }
+        }
+
+        private void SetCameraToFollowThis()
+        {
+            var cam = FindObjectOfType<OrbitCamera>();
+            if (cam != null)
+                cam.SetTarget(transform);
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            if (LocalInstance == this)
+                LocalInstance = null;
+        }
+
         private void EnsureGraphContainer()
         {
             if (_graphContainer != null) return;
@@ -27,8 +67,11 @@ namespace GitVisualizer.Core
                 _graphContainer = graph.transform.Find("GraphContainer");
         }
 
+        private bool IsLocalPlayer => !IsSpawned || IsOwner;
+
         public void NavigateTo(Transform targetNode, string branchName, int indexInBranch)
         {
+            if (!IsLocalPlayer) return;
             if (targetNode == null) return;
             if (_moveCoroutine != null) StopCoroutine(_moveCoroutine);
 
@@ -40,6 +83,7 @@ namespace GitVisualizer.Core
 
         public void NavigateToPosition(Vector3 worldPosition)
         {
+            if (!IsLocalPlayer) return;
             if (_moveCoroutine != null) StopCoroutine(_moveCoroutine);
             _moveCoroutine = StartCoroutine(MoveToPositionCoroutine(worldPosition));
         }

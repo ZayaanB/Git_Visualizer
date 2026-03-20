@@ -25,7 +25,7 @@ namespace GitVisualizer.Core
             GetComponent<NodeClickEffects>()?.PlayClickEffect();
             GitVisualizer.UI.CommitDetailsUI.Instance?.ShowCommit(_commit);
 
-            var avatar = FindObjectOfType<AvatarController>();
+            var avatar = AvatarController.LocalInstance ?? FindObjectOfType<AvatarController>();
             if (avatar != null)
                 avatar.NavigateTo(transform, _branchName, _indexInBranch);
         }
