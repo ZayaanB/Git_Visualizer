@@ -21,6 +21,10 @@ namespace GitVisualizer
         [SerializeField] private GameObject _winPanel;
         [SerializeField] private GameObject _gameOverPanel;
 
+        [Header("Audio")]
+        [SerializeField] private AudioClip _resolveSuccessClip;
+        [SerializeField] private AudioClip _timerWarningClip;
+
         private NetworkVariable<float> _remainingTime = new NetworkVariable<float>(TimerDuration);
         private NetworkVariable<int> _resolvedCount = new NetworkVariable<int>(0);
         private NetworkList<int> _conflictNodeIndices;
@@ -28,6 +32,7 @@ namespace GitVisualizer
 
         private bool _timerStarted;
         private float _localRemainingTime;
+        private bool _warningPlayed;
 
         public int ResolvedCount => _resolvedCount.Value;
         public bool IsConflictNode(int globalIndex)
@@ -152,6 +157,8 @@ namespace GitVisualizer
         [ClientRpc]
         private void MarkNodeResolvedClientRpc(int nodeIndex)
         {
+            if (_resolveSuccessClip != null)
+                AudioManager.Instance?.PlaySFX(_resolveSuccessClip);
             foreach (var node in FindObjectsByType<NodeInteractable>())
             {
                 if (node.GlobalIndex == nodeIndex)
@@ -176,6 +183,11 @@ namespace GitVisualizer
 
         private void OnTimerChanged(float prev, float current)
         {
+            if (!_warningPlayed && prev > 10f && current <= 10f && _timerWarningClip != null)
+            {
+                _warningPlayed = true;
+                AudioManager.Instance?.PlaySFX(_timerWarningClip);
+            }
             UpdateTimerDisplay(current);
         }
 
