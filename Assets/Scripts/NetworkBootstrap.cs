@@ -144,7 +144,7 @@ namespace GitVisualizer
         {
             if (_coopModePanel != null && _joinPanel != null) return;
 
-            var canvas = FindObjectOfType<Canvas>();
+            var canvas = FindFirstObjectByType<Canvas>();
             if (canvas == null)
             {
                 var canvasObj = new GameObject("CoopUICanvas");
