@@ -60,7 +60,9 @@ namespace GitVisualizer.UI
         {
             if (GetComponent<Canvas>() == null)
             {
-                gameObject.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+                var canvas = gameObject.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 100;
                 gameObject.AddComponent<CanvasScaler>();
                 gameObject.AddComponent<GraphicRaycaster>();
                 if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)

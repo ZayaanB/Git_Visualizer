@@ -8,8 +8,11 @@ namespace GitVisualizer.Core
     public class NodeInteractable : MonoBehaviour
     {
         private const float ResolveHoldDuration = 3f;
+        private const float EmissionIntensity = 4f;
 
         [SerializeField] private AudioClip _clickSfx;
+
+        private static Material s_emissiveConflictMaterial;
 
         private Commit _commit;
         private string _branchName;
@@ -20,6 +23,7 @@ namespace GitVisualizer.Core
         private bool _isResolved;
         private bool _isHolding;
         private float _holdStartTime;
+        private Material _originalMaterial;
         private MaterialPropertyBlock _propertyBlock;
         private Renderer _renderer;
 
@@ -38,6 +42,8 @@ namespace GitVisualizer.Core
         private void Start()
         {
             _renderer = GetComponent<Renderer>();
+            if (_renderer != null && _originalMaterial == null)
+                _originalMaterial = _renderer.sharedMaterial;
             RefreshConflictState();
         }
 
@@ -47,9 +53,11 @@ namespace GitVisualizer.Core
             {
                 _propertyBlock ??= new MaterialPropertyBlock();
                 float pulse = 0.7f + 0.3f * Mathf.Sin(Time.time * 4f);
-                var c = new Color(1f, pulse * 0.2f, pulse * 0.2f, 1f);
-                _propertyBlock.SetColor("_BaseColor", c);
-                _propertyBlock.SetColor("_Color", c);
+                var baseColor = new Color(1f, pulse * 0.2f, pulse * 0.2f, 1f);
+                var emissive = new Color(1f, 0.15f, 0.15f, 1f) * (EmissionIntensity * pulse);
+                _propertyBlock.SetColor("_BaseColor", baseColor);
+                _propertyBlock.SetColor("_Color", baseColor);
+                _propertyBlock.SetColor("_EmissionColor", emissive);
                 _renderer.SetPropertyBlock(_propertyBlock);
             }
 
@@ -92,10 +100,14 @@ namespace GitVisualizer.Core
         private void ApplyConflictMaterial()
         {
             if (_renderer == null) return;
+            EnsureEmissiveMaterial();
+            _renderer.sharedMaterial = s_emissiveConflictMaterial;
             _propertyBlock ??= new MaterialPropertyBlock();
-            var c = new Color(1f, 0.2f, 0.2f, 1f);
-            _propertyBlock.SetColor("_BaseColor", c);
-            _propertyBlock.SetColor("_Color", c);
+            var baseColor = new Color(1f, 0.2f, 0.2f, 1f);
+            var emissive = new Color(1f, 0.15f, 0.15f, 1f) * EmissionIntensity;
+            _propertyBlock.SetColor("_BaseColor", baseColor);
+            _propertyBlock.SetColor("_Color", baseColor);
+            _propertyBlock.SetColor("_EmissionColor", emissive);
             _renderer.SetPropertyBlock(_propertyBlock);
         }
 
@@ -103,6 +115,17 @@ namespace GitVisualizer.Core
         {
             if (_renderer == null) return;
             _renderer.SetPropertyBlock(null);
+            if (_originalMaterial != null)
+                _renderer.sharedMaterial = _originalMaterial;
+        }
+
+        private static void EnsureEmissiveMaterial()
+        {
+            if (s_emissiveConflictMaterial != null) return;
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            s_emissiveConflictMaterial = new Material(shader);
+            s_emissiveConflictMaterial.EnableKeyword("_EMISSION");
+            s_emissiveConflictMaterial.SetColor("_EmissionColor", new Color(1f, 0.1f, 0.1f, 1f) * EmissionIntensity);
         }
 
         private void OnMouseDown()
