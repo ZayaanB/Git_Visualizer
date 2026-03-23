@@ -9,6 +9,8 @@ namespace GitVisualizer.Core
     {
         private const float ResolveHoldDuration = 3f;
 
+        [SerializeField] private AudioClip _clickSfx;
+
         private Commit _commit;
         private string _branchName;
         private int _indexInBranch;
@@ -134,6 +136,8 @@ namespace GitVisualizer.Core
                 return;
 
             GetComponent<NodeClickEffects>()?.PlayClickEffect();
+            if (_clickSfx != null)
+                AudioManager.Instance?.PlaySFX(_clickSfx);
             GitVisualizer.UI.CommitDetailsUI.Instance?.ShowCommit(_commit);
 
             var avatar = AvatarController.LocalInstance ?? FindFirstObjectByType<AvatarController>();
