@@ -17,6 +17,7 @@ namespace GitVisualizer.Editor
         {
             var scene = EditorSceneManager.OpenScene(MainGameScenePath, OpenSceneMode.Single);
             EnsureNetworkManager();
+            EnsureNetworkDisconnectHandler();
             EnsureNetworkBootstrap();
             EnsureAvatarPrefabAndNetworkObject();
             EnsureGraphRendererWithNetworkObject();
@@ -117,6 +118,17 @@ namespace GitVisualizer.Editor
             go.AddComponent<NetworkManager>();
             go.AddComponent<UnityTransport>();
             Debug.Log("[Git Visualizer] Added NetworkManager with UnityTransport.");
+        }
+
+        private static void EnsureNetworkDisconnectHandler()
+        {
+            var nm = Object.FindFirstObjectByType<NetworkManager>();
+            if (nm == null) return;
+            if (nm.GetComponent<GitVisualizer.Network.NetworkDisconnectHandler>() == null)
+            {
+                nm.gameObject.AddComponent<GitVisualizer.Network.NetworkDisconnectHandler>();
+                Debug.Log("[Git Visualizer] Added NetworkDisconnectHandler to NetworkManager.");
+            }
         }
 
         private static void EnsureNetworkBootstrap()
