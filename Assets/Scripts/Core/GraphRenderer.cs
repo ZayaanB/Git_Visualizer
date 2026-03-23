@@ -299,6 +299,17 @@ namespace GitVisualizer.Core
             lineRenderer.SetPositions(positions);
         }
 
+        public void ClearGraph()
+        {
+            var existing = transform.Find(GraphContainerName);
+            if (existing != null)
+            {
+                _nodePool?.DestroyAll();
+                _nodePool = null;
+                Object.Destroy(existing.gameObject);
+            }
+        }
+
         private void EnsureGraphContainer()
         {
             var existing = transform.Find(GraphContainerName);
