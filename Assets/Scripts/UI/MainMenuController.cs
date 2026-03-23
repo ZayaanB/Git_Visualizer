@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
+using GitVisualizer.Network;
 
 namespace GitVisualizer.UI
 {
@@ -26,6 +27,7 @@ namespace GitVisualizer.UI
             BuildUIIfNeeded();
             BindButtons();
             HideOverlays();
+            ShowConnectionLostPanelIfNeeded();
         }
 
         private void BuildUIIfNeeded()
@@ -234,6 +236,44 @@ namespace GitVisualizer.UI
                 _settingsPanel.SetActive(false);
             if (_learnMorePanel != null)
                 _learnMorePanel.SetActive(false);
+        }
+
+        private void ShowConnectionLostPanelIfNeeded()
+        {
+            if (!NetworkDisconnectHandler.ShowConnectionLostMessage) return;
+            NetworkDisconnectHandler.ClearConnectionLostFlag();
+
+            var parent = transform;
+            var panel = new GameObject("ConnectionLostPanel");
+            panel.transform.SetParent(parent, false);
+
+            var rect = panel.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+
+            var img = panel.AddComponent<Image>();
+            img.color = new Color(0.08f, 0.02f, 0.02f, 0.95f);
+
+            var layout = panel.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 24;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.padding = new RectOffset(40, 40, 40, 40);
+
+            var msgObj = new GameObject("Message");
+            msgObj.transform.SetParent(panel.transform, false);
+            var msgTmp = msgObj.AddComponent<TextMeshProUGUI>();
+            msgTmp.text = "Connection to the other player was lost.";
+            msgTmp.fontSize = 28;
+            msgTmp.color = new Color(1f, 0.4f, 0.4f, 1f);
+            msgTmp.alignment = TextAlignmentOptions.Center;
+            msgTmp.enableWordWrapping = true;
+
+            var closeBtn = CreateMenuButton(panel.transform, "OK");
+            closeBtn.onClick.AddListener(() => panel.SetActive(false));
+            closeBtn.GetComponentInChildren<TextMeshProUGUI>().text = "OK";
+            panel.transform.SetAsLastSibling();
+            panel.SetActive(true);
         }
 
         private void OnPlaySolo()
