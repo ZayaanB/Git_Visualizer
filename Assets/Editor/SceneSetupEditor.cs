@@ -18,6 +18,7 @@ namespace GitVisualizer.Editor
             var scene = EditorSceneManager.OpenScene(MainGameScenePath, OpenSceneMode.Single);
             EnsureNetworkManager();
             EnsureNetworkDisconnectHandler();
+            EnsurePostProcessing();
             EnsureNetworkBootstrap();
             EnsureAvatarPrefabAndNetworkObject();
             EnsureGraphRendererWithNetworkObject();
@@ -118,6 +119,18 @@ namespace GitVisualizer.Editor
             go.AddComponent<NetworkManager>();
             go.AddComponent<UnityTransport>();
             Debug.Log("[Git Visualizer] Added NetworkManager with UnityTransport.");
+        }
+
+        private static void EnsurePostProcessing()
+        {
+            try
+            {
+                PostProcessingSetupEditor.SetupPostProcessingInCurrentScene();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[Git Visualizer] Post-processing setup skipped (URP may not be installed): {ex.Message}");
+            }
         }
 
         private static void EnsureNetworkDisconnectHandler()

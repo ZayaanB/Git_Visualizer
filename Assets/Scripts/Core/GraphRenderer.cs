@@ -297,6 +297,8 @@ namespace GitVisualizer.Core
 
             lineRenderer.positionCount = vertexCount;
             lineRenderer.SetPositions(positions);
+            if (vertexCount > 16)
+                lineRenderer.Simplify(0.01f);
         }
 
         public void ClearGraph()

@@ -75,6 +75,7 @@ namespace GitVisualizer
                 _gameEnded.Value = false;
                 _timerStarted = true;
                 GraphRenderer.OnGraphReady += OnGraphReady;
+                SpawnInitialGraph();
             }
 
             BuildGameLoopUIIfNeeded();
@@ -127,6 +128,13 @@ namespace GitVisualizer
             int displaySec = Mathf.FloorToInt(_localRemainingTime);
             if (displaySec != prevDisplaySec)
                 _remainingTime.Value = _localRemainingTime;
+        }
+
+        private void SpawnInitialGraph()
+        {
+            var graph = _graphRenderer != null ? _graphRenderer : FindFirstObjectByType<GraphRenderer>();
+            if (graph != null)
+                graph.SpawnGraphFromRepo(_repoOwner, _repoName, _repoToken);
         }
 
         private void OnGraphReady(int totalNodeCount)
