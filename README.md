@@ -1,6 +1,6 @@
 # Git Visualizer
 
-> **Note:** This is an experimental game built with heavy use of AI assistance.
+> **Note:** This is an experimental game built with heavy use of AI assistance. - Zayaan
 
 A Unity 3D multiplayer game that visualizes GitHub repository commit history as an interactive 3D graph. Play **Merge Conflict Hunt** with friends over LAN or solo.
 
